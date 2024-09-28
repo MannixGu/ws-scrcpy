@@ -3,6 +3,8 @@ import { WDAMethod } from './WDAMethod';
 export class ControlCenterCommand {
     public static KILL_SERVER = 'kill_server';
     public static START_SERVER = 'start_server';
+    public static ADB_CONNECT = 'adb_connect';
+    public static ADB_DISCONNECT = 'adb_disconnect';
     public static UPDATE_INTERFACES = 'update_interfaces';
     public static CONFIGURE_STREAM = 'configure_stream';
     public static RUN_WDA = 'run-wda';
@@ -29,6 +31,8 @@ export class ControlCenterCommand {
         if (typeof data.udid === 'string') {
             command.udid = data.udid;
         }
+
+        console.error(`body type: ${body.type}`)
         switch (body.type) {
             case this.KILL_SERVER:
                 if (typeof data.pid !== 'number' && data.pid <= 0) {
@@ -44,6 +48,8 @@ export class ControlCenterCommand {
                 command.args = data.args;
                 return command;
             case this.START_SERVER:
+            case this.ADB_CONNECT:
+            case this.ADB_DISCONNECT:
             case this.UPDATE_INTERFACES:
             case this.CONFIGURE_STREAM:
             case this.RUN_WDA:

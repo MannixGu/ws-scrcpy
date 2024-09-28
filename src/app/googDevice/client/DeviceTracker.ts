@@ -170,6 +170,54 @@ export class DeviceTracker extends BaseDeviceTracker<GoogDeviceDescriptor, never
         return title.toLowerCase().replace(/\s/g, '_');
     }
 
+    protected buildDeviceExtra(tbody: Element) {
+        const div = document.createElement('div');
+        div.className = 'adb';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'wifi adb';
+
+        const connect = document.createElement('button');
+        connect.className = 'action-button'
+        connect.innerHTML = 'connect';
+
+        const disconnect = document.createElement('button');
+        disconnect.className = 'action-button'
+        disconnect.innerHTML = 'disconnect';
+
+        const device = this
+        connect.addEventListener('click', function () {
+            const inputValue = input.value;
+            device.sendMessage(ControlCenterCommand.ADB_CONNECT, inputValue)
+        });
+
+        disconnect.addEventListener('click', function () {
+            const inputValue = input.value;
+            device.sendMessage(ControlCenterCommand.ADB_DISCONNECT, inputValue)
+        });
+
+        div.appendChild(input);
+        div.appendChild(connect);
+        div.appendChild(disconnect);
+
+        tbody.appendChild(div)
+    }
+
+    protected sendMessage(cmd: string, uuid: string) {
+        const data: Message = {
+            id: this.getNextId(),
+            type: cmd,
+            data: {
+                udid: uuid,
+            },
+        };
+
+        if (this.ws && this.ws.readyState === this.ws.OPEN) {
+            this.ws.send(JSON.stringify(data));
+        }
+    }
+
     protected buildDeviceRow(tbody: Element, device: GoogDeviceDescriptor): void {
         let selectedInterfaceUrl = '';
         let selectedInterfaceName = '';
@@ -187,12 +235,25 @@ export class DeviceTracker extends BaseDeviceTracker<GoogDeviceDescriptor, never
                     <div class="sdk-version">${device['ro.build.version.sdk']}</div>
                 </div>
                 <div class="device-state" title="State: ${device.state}"></div>
+                <div id="device_adb" class="adb ${isActive ? 'hidden' : 'visible'}">
+                </div>
             </div>
             <div id="${servicesId}" class="services"></div>
         </div>`.content;
         const services = row.getElementById(servicesId);
         if (!services) {
             return;
+        }
+
+        const device_adb = row.getElementById("device_adb")!!;
+        if(!isActive) {
+            const actionButton = document.createElement('button');
+            actionButton.className = 'action-button';
+            actionButton.innerText = "connect";
+            actionButton.onclick = this.onActionButtonClick
+            actionButton.setAttribute(Attribute.UDID, device.udid);
+            actionButton.setAttribute(Attribute.COMMAND, ControlCenterCommand.ADB_CONNECT);
+            device_adb.appendChild(actionButton)
         }
 
         DeviceTracker.tools.forEach((tool) => {

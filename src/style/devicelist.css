@@ -220,6 +220,10 @@ body.list #device_list_menu {
     cursor: pointer;
 }
 
+#devices .device-list .adb .action-button:hover {
+    color: var(--kill-button-hover-color);
+}
+
 #devices .device-list .device.active div.desc-block .action-button:hover {
     color: var(--kill-button-hover-color);
 }
