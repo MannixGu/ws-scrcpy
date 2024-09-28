@@ -109,6 +109,7 @@ export abstract class BaseDeviceTracker<DD extends BaseDeviceDescriptor, TE exte
         const tbody = this.getOrBuildTableBody(devices);
 
         const block = this.getOrCreateTrackerBlock(tbody, this.trackerName);
+        this.buildDeviceExtra(block)
         data.forEach((item) => {
             this.buildDeviceRow(block, item);
         });
@@ -143,6 +144,10 @@ export abstract class BaseDeviceTracker<DD extends BaseDeviceDescriptor, TE exte
         }
         this.setNameValue(el, controlCenterName);
         return el;
+    }
+
+    protected buildDeviceExtra(tbody: Element): void {
+        tbody
     }
 
     protected abstract buildDeviceRow(tbody: Element, device: DD): void;

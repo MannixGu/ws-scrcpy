@@ -11,6 +11,7 @@ import { ControlCenterCommand } from '../../../common/ControlCenterCommand';
 import * as os from 'os';
 import * as crypto from 'crypto';
 import { DeviceState } from '../../../common/DeviceState';
+import { exec } from 'child_process';
 
 export class ControlCenter extends BaseControlCenter<GoogDeviceDescriptor> implements Service {
     private static readonly defaultWaitAfterError = 1000;
@@ -155,14 +156,35 @@ export class ControlCenter extends BaseControlCenter<GoogDeviceDescriptor> imple
         this.stopTracker();
     }
 
+    public async exeCmd(command: string) {
+        exec(`${command}`, (error: any, stdout: any, stderr: any) => {
+            if (error) {
+                console.error(`${command} 执行出错: ${error}`);
+                return;
+            }
+            console.log(`${command}  stdout: ${stdout}`);
+            console.log(`${command}  stderr: ${stderr}`);
+        });
+        return;
+    }
+
     public async runCommand(command: ControlCenterCommand): Promise<void> {
         const udid = command.getUdid();
+        const type = command.getType();
+        switch (type) {
+            case ControlCenterCommand.ADB_CONNECT:
+                await this.exeCmd(`adb connect ${udid}`)
+                return;
+            case ControlCenterCommand.ADB_DISCONNECT:
+                await this.exeCmd(`adb disconnect ${udid}`)
+                return;
+        }
+
         const device = this.getDevice(udid);
         if (!device) {
             console.error(`Device with udid:"${udid}" not found`);
             return;
         }
-        const type = command.getType();
         switch (type) {
             case ControlCenterCommand.KILL_SERVER:
                 await device.killServer(command.getPid());
