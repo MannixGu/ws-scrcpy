@@ -168,12 +168,85 @@ export class ControlCenter extends BaseControlCenter<GoogDeviceDescriptor> imple
         return;
     }
 
+    private parseIpRange(ipInput: string): string[] {
+        // Helper function to check if a given segment is an IP range like [100-200]
+        const isRangeSegment = (segment: string): boolean => /^\[\d+-\d+\]$/.test(segment);
+
+        // Helper function to extract numbers from a range segment like "[100-200]"
+        const extractRange = (rangeStr: string): [number, number] => {
+            const match = rangeStr.match(/^\[(\d+)-(\d+)\]$/);
+            if (!match) throw new Error("Invalid range format");
+            return [+match[1], +match[2]];
+        };
+
+        // Split input into IP and optional port parts
+        let ipPart = ipInput;
+        let portPart = "";
+        if (ipInput.includes(":")) {
+            [ipPart, portPart] = ipInput.split(":");
+        }
+
+        const segments = ipPart.split(".");
+        if (segments.length !== 4) {
+            return [];
+        }
+
+        const results: string[] = [];
+        const currentIps: string[][] = [[]];
+
+        for (let i = 0; i < 4; i++) {
+            const segment = segments[i];
+            if (segment === "0") {
+                // If it's "0", generate all possible values (0-255)
+                const expandedIps: string[][] = [];
+                for (const ip of currentIps) {
+                    for (let num = 1; num <= 254; num++) {
+                        expandedIps.push([...ip, String(num)]);
+                    }
+                }
+                currentIps.splice(0, currentIps.length, ...expandedIps); // Replace with expanded IPs
+            }
+            else if (isRangeSegment(segment)) {
+                // If it's a range like [100-200], expand the range
+                const [start, end] = extractRange(segment);
+                const expandedIps: string[][] = [];
+                for (const ip of currentIps) {
+                    for (let num = start; num <= end; num++) {
+                        expandedIps.push([...ip, String(num)]);
+                    }
+                }
+                currentIps.splice(0, currentIps.length, ...expandedIps); // Replace with expanded IPs
+            } else if (/^\d+$/.test(segment)) {
+                // If it's a single number, append it directly
+                for (const ip of currentIps) {
+                    ip.push(segment);
+                }
+            } else {
+                throw new Error(`Invalid segment in IP address: ${segment}`);
+            }
+        }
+
+        // Build final IP addresses
+        for (const ipParts of currentIps) {
+            const fullIp = ipParts.join(".");
+            if (portPart) {
+                results.push(`${fullIp}:${portPart}`);
+            } else {
+                results.push(fullIp);
+            }
+        }
+
+        return results;
+    }
+
     public async runCommand(command: ControlCenterCommand): Promise<void> {
         const udid = command.getUdid();
         const type = command.getType();
         switch (type) {
             case ControlCenterCommand.ADB_CONNECT:
-                await this.exeCmd(`adb connect ${udid}`)
+                for (const ip of this.parseIpRange(udid)) {
+                    await this.exeCmd(`adb connect ${ip}`);
+                }
                 return;
             case ControlCenterCommand.ADB_DISCONNECT:
                 await this.exeCmd(`adb disconnect ${udid}`)
