@@ -246,15 +246,14 @@ export class DeviceTracker extends BaseDeviceTracker<GoogDeviceDescriptor, never
         }
 
         const device_adb = row.getElementById("device_adb")!!;
-        if(!isActive) {
-            const actionButton = document.createElement('button');
-            actionButton.className = 'action-button';
-            actionButton.innerText = "connect";
-            actionButton.onclick = this.onActionButtonClick
-            actionButton.setAttribute(Attribute.UDID, device.udid);
-            actionButton.setAttribute(Attribute.COMMAND, ControlCenterCommand.ADB_CONNECT);
-            device_adb.appendChild(actionButton)
-        }
+        const actionButton = document.createElement('button');
+        const cmd = isActive ? ControlCenterCommand.ADB_DISCONNECT : ControlCenterCommand.ADB_CONNECT;
+        actionButton.className = 'action-button';
+        actionButton.innerText = cmd;
+        actionButton.onclick = this.onActionButtonClick
+        actionButton.setAttribute(Attribute.UDID, device.udid);
+        actionButton.setAttribute(Attribute.COMMAND, cmd);
+        device_adb.appendChild(actionButton)
 
         DeviceTracker.tools.forEach((tool) => {
             const entry = tool.createEntryForDeviceList(device, blockClass, this.params);
